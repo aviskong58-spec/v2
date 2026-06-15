@@ -1,0 +1,418 @@
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>小贩语音记账</title>
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link id="manifest" rel="manifest">
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: #000; color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", Arial, sans-serif;
+  overscroll-behavior: none;
+}
+.app { max-width: 520px; margin: 0 auto; padding: 16px 16px 100px; }
+header { display: flex; justify-content: space-between; align-items: center; padding: 4px 0 18px; }
+h1 { font-size: 24px; margin: 0; font-weight: 800; letter-spacing: .5px; }
+#date { opacity: .65; font-size: 14px; font-variant-numeric: tabular-nums; }
+
+.totals { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 22px; }
+.card { background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 18px; padding: 14px 16px; position: relative; }
+.card label { font-size: 13px; opacity: .7; display: block; }
+.card .value { font-size: 34px; font-weight: 800; margin-top: 6px; line-height: 1; font-variant-numeric: tabular-nums; }
+.card.cash { box-shadow: inset 3px 0 0 #22c55e; }
+.card.cash .value { color: #22c55e; }
+.card.tng { box-shadow: inset 3px 0 0 #3b82f6; }
+.card.tng .value { color: #3b82f6; }
+.card.total { grid-column: 1 / -1; background: #121212; border-color: #262626; }
+.card.total .value { color: #facc15; font-size: 44px; }
+
+.mic-wrap { display: flex; flex-direction: column; align-items: center; margin: 10px 0 18px; }
+.mic {
+  width: 190px; height: 190px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 20%, #ff5a5a, #dc2626 60%, #991b1b);
+  border: none; color: white; font-size: 20px; font-weight: 800;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  box-shadow: 0 20px 40px rgba(220,38,38,.35), inset 0 -8px 16px rgba(0,0,0,.4);
+  touch-action: none; user-select: none; transition: transform .08s ease;
+}
+.mic:active, .mic.active { transform: scale(.94); }
+.mic-icon { font-size: 56px; margin-bottom: 6px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
+#status { margin-top: 14px; font-size: 15px; opacity: .85; height: 22px; text-align: center; }
+
+.heard { background: #0a0a0a; border: 1px solid #222; border-radius: 16px; padding: 14px; margin: 14px 0; }
+.heard-title { font-size: 12px; opacity: .55; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+#lastText { font-size: 20px; font-weight: 700; min-height: 28px; word-break: break-word; }
+.manual { display: flex; gap: 8px; margin-top: 12px; }
+.manual input { flex: 1; background: #000; border: 1px solid #333; border-radius: 12px; padding: 14px 12px; color: #fff; font-size: 17px; outline: none; }
+.manual input:focus { border-color: #555; }
+.manual button { padding: 0 16px; border: none; border-radius: 12px; font-weight: 800; font-size: 15px; white-space: nowrap; }
+#addCashBtn { background: #052e16; color: #4ade80; border: 1px solid #14532d; }
+#addTngBtn { background: #0b1a3a; color: #60a5fa; border: 1px solid #1e3a8a; }
+
+.list-wrap { margin-top: 24px; }
+.list-title { font-size: 14px; opacity: .7; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 14px; overflow: hidden; }
+thead th { background: #111; font-size: 13px; font-weight: 600; text-align: left; padding: 11px 12px; opacity: .75; }
+tbody td { padding: 14px 12px; border-top: 1px solid #181818; font-size: 17px; font-variant-numeric: tabular-nums; }
+tbody tr:first-child td { border-top: none; }
+.type-cash { color: #22c55e; font-weight: 800; }
+.type-tng { color: #3b82f6; font-weight: 800; }
+.empty { padding: 28px; text-align: center; opacity: .5; font-size: 15px; }
+
+.actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 20px; position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px 18px; background: linear-gradient(to top, #000 70%, transparent); max-width: 520px; margin-inline: auto; }
+.actions button { height: 58px; border: none; border-radius: 14px; font-size: 18px; font-weight: 800; background: #1c1c1c; color: #fff; border: 1px solid #2a2a2a; }
+#clearBtn { background: #2a0f0f; color: #fca5a5; border-color: #7f1d1d; }
+#undoBtn { background: #1a1a1a; }
+#settleBtn { background: #facc15; color: #000; border-color: #eab308; }
+
+.badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; background: #222; opacity: .8; }
+.offline { background: #14532d; color: #86efac; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; opacity: .7; font-size: 12px; }
+.chip { border: 1px solid #333; padding: 4px 8px; border-radius: 8px; }
+
+@media (max-width: 380px) {
+  .mic { width: 170px; height: 170px; }
+  .card .value { font-size: 30px; }
+  .card.total .value { font-size: 38px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>小贩语音记账</h1>
+    <div id="date">-</div>
+  </header>
+
+  <div class="totals">
+    <div class="card cash">
+      <label>现金总额</label>
+      <div class="value" id="cashTotal">RM 0.00</div>
+    </div>
+    <div class="card tng">
+      <label>TnG总额</label>
+      <div class="value" id="tngTotal">RM 0.00</div>
+    </div>
+    <div class="card total">
+      <label>今日总收入</label>
+      <div class="value" id="allTotal">RM 0.00</div>
+    </div>
+  </div>
+
+  <div class="mic-wrap">
+    <button id="micBtn" class="mic" aria-label="按住说话">
+      <div class="mic-icon">🎤</div>
+      <div>按住说话</div>
+    </button>
+    <div id="status">准备就绪 · 离线可用</div>
+    <div class="chips">
+      <span class="chip">"收现金5"</span>
+      <span class="chip">"TnG 10"</span>
+      <span class="chip">"cash 7.5"</span>
+      <span class="chip">"settle"</span>
+    </div>
+  </div>
+
+  <div class="heard">
+    <div class="heard-title">识别内容</div>
+    <div id="lastText">-</div>
+    <div class="manual">
+      <input id="manualInput" type="text" placeholder="吵杂？手动改这里..." enterkeyhint="done" autocomplete="off">
+      <button id="addCashBtn">记现金</button>
+      <button id="addTngBtn">记TnG</button>
+    </div>
+  </div>
+
+  <div class="list-wrap">
+    <div class="list-title">
+      <span>今日记录</span>
+      <span class="badge" id="countBadge">0 笔</span>
+    </div>
+    <table>
+      <thead><tr><th>时间</th><th>类型</th><th style="text-align:right">金额</th></tr></thead>
+      <tbody id="listBody">
+        <tr><td colspan="3" class="empty">还没有记录</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="actions">
+  <button id="settleBtn">结算</button>
+  <button id="undoBtn">撤销</button>
+  <button id="clearBtn">清空</button>
+</div>
+
+<script type="module">
+import { pipeline, env } from 'https://esm.sh/@xenova/transformers@2.17.2';
+env.useBrowserCache = true;
+env.allowLocalModels = false;
+
+// --- PWA Setup ---
+const manifestData = {
+  name: "小贩语音记账",
+  short_name: "记账",
+  start_url: ".",
+  display: "standalone",
+  background_color: "#000000",
+  theme_color: "#000000",
+  description: "马来西亚小贩离线语音记账",
+  icons: [{
+    src: "data:image/svg+xml;base64," + btoa(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='#000'/><circle cx='256' cy='256' r='180' fill='#dc2626'/><text x='256' y='290' font-size='200' text-anchor='middle' fill='white' font-family='Arial'>🎤</text></svg>`),
+    sizes: "512x512",
+    type: "image/svg+xml"
+  }]
+};
+document.getElementById('manifest').href = URL.createObjectURL(new Blob([JSON.stringify(manifestData)], {type: 'application/json'}));
+
+const swCode = `
+const CACHE='hawker-v4';
+self.addEventListener('install',e=>{self.skipWaiting()});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))));self.clients.claim()});
+self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET') return;
+  e.respondWith(caches.open(CACHE).then(async cache=>{
+    const cached=await cache.match(e.request);
+    const fetchPromise=fetch(e.request).then(res=>{
+      if(res.ok){cache.put(e.request,res.clone())}
+      return res;
+    }).catch(()=>cached);
+    return cached||fetchPromise;
+  }));
+});
+`;
+if('serviceWorker' in navigator){
+  const swUrl = URL.createObjectURL(new Blob([swCode], {type:'text/javascript'}));
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
+
+// --- App Logic ---
+const $ = id => document.getElementById(id);
+const cashTotalEl = $('cashTotal'), tngTotalEl = $('tngTotal'), allTotalEl = $('allTotal');
+const listBody = $('listBody'), lastText = $('lastText'), statusEl = $('status');
+const micBtn = $('micBtn'), manualInput = $('manualInput');
+const countBadge = $('countBadge');
+
+let records = [];
+const todayKey = () => 'hawker-' + new Date().toISOString().slice(0,10);
+
+function fmt(n){ return 'RM ' + n.toFixed(2); }
+function timeStr(ts){ const d=new Date(ts); return d.toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'}); }
+
+function loadData(){
+  records = JSON.parse(localStorage.getItem(todayKey()) || '[]');
+  render();
+}
+function saveData(){ localStorage.setItem(todayKey(), JSON.stringify(records)); }
+
+function render(){
+  const cash = records.filter(r=>r.type==='cash').reduce((s,r)=>s+r.amount,0);
+  const tng = records.filter(r=>r.type==='tng').reduce((s,r)=>s+r.amount,0);
+  cashTotalEl.textContent = fmt(cash);
+  tngTotalEl.textContent = fmt(tng);
+  allTotalEl.textContent = fmt(cash+tng);
+  countBadge.textContent = records.length + ' 笔';
+  
+  listBody.innerHTML = '';
+  if(records.length===0){
+    listBody.innerHTML = `<tr><td colspan="3" class="empty">还没有记录</td></tr>`;
+    return;
+  }
+  [...records].reverse().forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${timeStr(r.time)}</td><td class="type-${r.type}">${r.type==='cash'?'现金':'TnG'}</td><td style="text-align:right;font-weight:700">${r.amount.toFixed(2)}</td>`;
+    listBody.appendChild(tr);
+  });
+}
+
+function addRecord(type, amount){
+  if(!amount || amount<=0) return;
+  records.push({type, amount: +amount, time: Date.now()});
+  saveData(); render();
+  speak('已记好');
+  navigator.vibrate?.(20);
+}
+
+function undo(){
+  if(records.length===0) return;
+  records.pop(); saveData(); render(); speak('已撤销');
+}
+function clearToday(){
+  if(!confirm('确定清空今日所有记录？')) return;
+  records=[]; saveData(); render(); speak('已清空');
+}
+function settle(){
+  const cash = records.filter(r=>r.type==='cash').reduce((s,r)=>s+r.amount,0);
+  const tng = records.filter(r=>r.type==='tng').reduce((s,r)=>s+r.amount,0);
+  const total = cash+tng;
+  const msg = `现金${cash.toFixed(0)}块, TnG ${tng.toFixed(0)}块, 总共${total.toFixed(0)}块`;
+  speak(msg);
+  statusEl.textContent = msg;
+  setTimeout(()=>statusEl.textContent='准备就绪 · 离线可用', 3000);
+}
+
+function speak(text){
+  try{
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN'; u.rate = 1.05; u.pitch = 1;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }catch{}
+}
+
+// --- Intent Parsing (模仿 Llama 3) ---
+function parseCommand(text){
+  const t = text.toLowerCase().trim();
+  // 正则意图
+  if(/(取消|撤销|上一笔|undo|padam|delete)/i.test(t)) return {action:'undo'};
+  if(/(清空|清除|clear|kosong)/i.test(t)) return {action:'clear'};
+  if(/(结算|今日结算|结账|settle|kira|total)/i.test(t)) return {action:'settle'};
+  
+  const amountMatch = t.match(/(\d+[\.,]?\d{0,2})/);
+  const amount = amountMatch ? parseFloat(amountMatch[1].replace(',','.')) : null;
+  
+  const isCash = /(现金|现钱|收现|cash|tunai|duit)/i.test(t);
+  const isTng = /(tng|tngo|touch|一touch|touchngo|tng|电子|ewallet|duitnow|qr)/i.test(t);
+  
+  if(amount){
+    if(isTng) return {action:'add', type:'tng', amount};
+    if(isCash) return {action:'add', type:'cash', amount};
+    // 默认现金
+    return {action:'add', type:'cash', amount};
+  }
+  return {action:'unknown', text};
+}
+
+/*
+// --- 可选: WebLLM Llama 3 集成 (更准) ---
+// import * as webllm from "https://esm.sh/@mlc-ai/web-llm";
+// const engine = await webllm.CreateMLCEngine("Llama-3.2-3B-Instruct-q4f32_1-MLC", { initProgressCallback: p=>statusEl.textContent=p.text });
+// async function parseWithLLM(text){
+//   const prompt = `你是马来西亚小贩记账助手。用户说: "${text}"。提取意图JSON: {"action":"add|settle|undo|clear","type":"cash|tng","amount":number}。只返回JSON。规则: 现金=cash, TnG=tng/touch, 结算=settle。`;
+//   const r = await engine.chat.completions.create({messages:[{role:"user",content:prompt}], temperature:0});
+//   return JSON.parse(r.choices[0].message.content);
+// }
+*/
+
+function handleTranscript(text){
+  lastText.textContent = text;
+  manualInput.value = text;
+  const cmd = parseCommand(text);
+  if(cmd.action==='add'){
+    addRecord(cmd.type, cmd.amount);
+    statusEl.textContent = `已记 ${cmd.type==='cash'?'现金':'TnG'} ${cmd.amount}`;
+  }else if(cmd.action==='settle'){
+    settle();
+  }else if(cmd.action==='undo'){
+    undo();
+  }else if(cmd.action==='clear'){
+    clearToday();
+  }else{
+    statusEl.textContent = '未识别, 请手动选择';
+  }
+}
+
+// --- Voice Recognition ---
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let whisper = null;
+let mediaRecorder = null, audioChunks = [], stream = null;
+let isPressing = false;
+
+async function initRecognition(){
+  if(SpeechRecognition){
+    recognition = new SpeechRecognition();
+    recognition.lang = 'zh-CN'; // 同时能识别中英马来数字
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = false;
+    recognition.onresult = e => handleTranscript(e.results[0][0].transcript);
+    recognition.onerror = e => { statusEl.textContent = '识别失败, 用离线模型'; };
+    recognition.onend = ()=>{ if(isPressing) startListen(); else statusEl.textContent='准备就绪 · 离线可用'; };
+  }
+}
+
+async function loadWhisper(){
+  if(whisper) return;
+  statusEl.textContent = '首次加载离线模型...';
+  whisper = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
+    quantized: true,
+    progress_callback: d => {
+      if(d.status==='download') statusEl.textContent = `下载模型 ${Math.round(d.progress||0)}%`;
+      if(d.status==='ready') statusEl.textContent = '离线模型就绪';
+    }
+  });
+}
+
+async function startWhisperRecord(){
+  await loadWhisper();
+  stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+  audioChunks = [];
+  mediaRecorder = new MediaRecorder(stream, {mimeType:'audio/webm'});
+  mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+  mediaRecorder.onstop = async ()=>{
+    const blob = new Blob(audioChunks, {type:'audio/webm'});
+    statusEl.textContent = '识别中...';
+    try{
+      const out = await whisper(blob, {language:null, task:'transcribe'});
+      handleTranscript(out.text.trim());
+    }catch(e){ statusEl.textContent='离线识别失败'; }
+    stream.getTracks().forEach(t=>t.stop());
+  };
+  mediaRecorder.start();
+}
+
+function stopWhisperRecord(){ mediaRecorder?.state==='recording' && mediaRecorder.stop(); }
+
+async function startListen(){
+  if(isPressing) return;
+  isPressing = true;
+  micBtn.classList.add('active');
+  navigator.vibrate?.(10);
+  statusEl.textContent = '聆听中...';
+  if(recognition){
+    try{ recognition.start(); }catch{}
+  }else{
+    try{ await startWhisperRecord(); }catch(e){ statusEl.textContent='需要麦克风权限'; isPressing=false; }
+  }
+}
+function stopListen(){
+  if(!isPressing) return;
+  isPressing = false;
+  micBtn.classList.remove('active');
+  if(recognition){ try{ recognition.stop(); }catch{} }
+  else{ stopWhisperRecord(); }
+}
+
+// Touch & Mouse
+['pointerdown','touchstart','mousedown'].forEach(ev=> micBtn.addEventListener(ev, e=>{e.preventDefault(); startListen();}));
+['pointerup','pointerleave','touchend','mouseup','touchcancel'].forEach(ev=> window.addEventListener(ev, stopListen));
+
+// Buttons
+$('addCashBtn').onclick = ()=>{ const m=manualInput.value.match(/(\d+[\.,]?\d{0,2})/); if(m) addRecord('cash', parseFloat(m[1])); };
+$('addTngBtn').onclick = ()=>{ const m=manualInput.value.match(/(\d+[\.,]?\d{0,2})/); if(m) addRecord('tng', parseFloat(m[1])); };
+$('undoBtn').onclick = undo;
+$('clearBtn').onclick = clearToday;
+$('settleBtn').onclick = settle;
+
+function updateDate(){
+  const d = new Date();
+  $('date').textContent = d.toLocaleDateString('zh-CN',{month:'long',day:'numeric', weekday:'short'});
+}
+updateDate(); loadData(); initRecognition();
+
+// Keep screen awake for stall use
+let wakeLock=null; 
+document.addEventListener('visibilitychange', async ()=>{ if(document.visibilityState==='visible' && 'wakeLock' in navigator){ try{ wakeLock = await navigator.wakeLock.request('screen'); }catch{} } });
+
+// Update badge for offline
+window.addEventListener('online', ()=> statusEl.textContent='准备就绪 · 在线');
+window.addEventListener('offline', ()=> statusEl.textContent='准备就绪 · 离线可用');
+if(!navigator.onLine) statusEl.textContent='准备就绪 · 离线可用';
+</script>
+<script>(function(){document.addEventListener("click",function(e){var a=e.target.closest("[data-product-id]");if(!a)return;e.preventDefault();var pid=a.getAttribute("data-product-id");if(pid)parent.postMessage({type:"ecto-artifact-link-click",productId:pid},"*")})})();</script>
+
+</body></html>
