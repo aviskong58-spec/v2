@@ -1,418 +1,291 @@
-<html lang="zh-CN"><head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>小贩语音记账</title>
-<meta name="theme-color" content="#000000">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<link id="manifest" rel="manifest">
-<style>
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; }
-body {
-  margin: 0; background: #000; color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", Arial, sans-serif;
-  overscroll-behavior: none;
-}
-.app { max-width: 520px; margin: 0 auto; padding: 16px 16px 100px; }
-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 0 18px; }
-h1 { font-size: 24px; margin: 0; font-weight: 800; letter-spacing: .5px; }
-#date { opacity: .65; font-size: 14px; font-variant-numeric: tabular-nums; }
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深海奇遇：拯救发光水母（含听写模式）</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Comic Sans MS', sans-serif; background: radial-gradient(circle at center, #0a2a43 0%, #020813 100%); color: white; display: flex; justify-content: center; align-items: center; }
+        .screen { display: none; flex-direction: column; align-items: center; text-align: center; padding: 20px; max-width: 600px; width: 90%; animation: fadeIn 1s ease; }
+        .active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        h1 { font-size: 2.5rem; text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff; margin-bottom: 10px; color: #e0f7ff; }
+        p { font-size: 1.2rem; line-height: 1.6; margin-bottom: 30px; color: #b3e5fc; }
+        button { padding: 15px 40px; font-size: 1.5rem; border: none; border-radius: 50px; background: linear-gradient(45deg, #00c6ff, #0072ff); color: white; cursor: pointer; box-shadow: 0 0 15px rgba(0, 198, 255, 0.6); transition: all 0.3s ease; margin: 5px;}
+        button:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(0, 198, 255, 0.9); }
+        
+        /* 第一关翻牌 */
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; max-width: 400px; margin-bottom: 20px; }
+        .card { aspect-ratio: 1/1; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; cursor: pointer; transition: all 0.3s; border: 2px solid rgba(255,255,255,0.2); user-select: none; }
+        .card.flipped, .card.matched { background: rgba(0, 255, 255, 0.2); border-color: #00ffff; }
+        .card.shake { animation: shake 0.5s ease; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        
+        /* 第二关连词 */
+        .sentence-area { min-height: 60px; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; margin-bottom: 20px; width: 100%; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; border: 2px dashed rgba(255,255,255,0.3); }
+        .word-bubble { padding: 8px 15px; background: #0072ff; border-radius: 20px; cursor: pointer; margin: 5px; transition: 0.3s; }
+        .word-bubble:hover { background: #00c6ff; }
+        .word-bubble.used { opacity: 0.3; pointer-events: none; }
+        
+        /* 第三关对话 */
+        .dialogue-options { display: flex; flex-direction: column; gap: 15px; width: 100%; }
+        .option-btn { background: rgba(255,255,255,0.1); border: 2px solid #00ffff; padding: 15px; border-radius: 15px; font-size: 1.1rem; transition: 0.3s; }
+        .option-btn:hover { background: rgba(0, 255, 255, 0.2); }
 
-.totals { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 22px; }
-.card { background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 18px; padding: 14px 16px; position: relative; }
-.card label { font-size: 13px; opacity: .7; display: block; }
-.card .value { font-size: 34px; font-weight: 800; margin-top: 6px; line-height: 1; font-variant-numeric: tabular-nums; }
-.card.cash { box-shadow: inset 3px 0 0 #22c55e; }
-.card.cash .value { color: #22c55e; }
-.card.tng { box-shadow: inset 3px 0 0 #3b82f6; }
-.card.tng .value { color: #3b82f6; }
-.card.total { grid-column: 1 / -1; background: #121212; border-color: #262626; }
-.card.total .value { color: #facc15; font-size: 44px; }
+        /* 新增：听写模式样式 */
+        .dictation-box { background: rgba(0,0,0,0.4); padding: 30px; border-radius: 20px; border: 2px solid #00ffff; width: 100%; margin-bottom: 20px;}
+        .zh-word { font-size: 3rem; color: #fff; margin-bottom: 10px; text-shadow: 0 0 10px #00ffff;}
+        .speaker-btn { font-size: 3rem; cursor: pointer; margin-bottom: 20px; transition: 0.3s;}
+        .speaker-btn:hover { transform: scale(1.2); }
+        input[type="text"] { width: 80%; padding: 15px; font-size: 1.5rem; border-radius: 10px; border: none; text-align: center; outline: none; margin-bottom: 15px;}
+        .status-msg { height: 30px; font-size: 1.2rem; margin-top: 10px;}
 
-.mic-wrap { display: flex; flex-direction: column; align-items: center; margin: 10px 0 18px; }
-.mic {
-  width: 190px; height: 190px; border-radius: 50%;
-  background: radial-gradient(circle at 30% 20%, #ff5a5a, #dc2626 60%, #991b1b);
-  border: none; color: white; font-size: 20px; font-weight: 800;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  box-shadow: 0 20px 40px rgba(220,38,38,.35), inset 0 -8px 16px rgba(0,0,0,.4);
-  touch-action: none; user-select: none; transition: transform .08s ease;
-}
-.mic:active, .mic.active { transform: scale(.94); }
-.mic-icon { font-size: 56px; margin-bottom: 6px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
-#status { margin-top: 14px; font-size: 15px; opacity: .85; height: 22px; text-align: center; }
-
-.heard { background: #0a0a0a; border: 1px solid #222; border-radius: 16px; padding: 14px; margin: 14px 0; }
-.heard-title { font-size: 12px; opacity: .55; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
-#lastText { font-size: 20px; font-weight: 700; min-height: 28px; word-break: break-word; }
-.manual { display: flex; gap: 8px; margin-top: 12px; }
-.manual input { flex: 1; background: #000; border: 1px solid #333; border-radius: 12px; padding: 14px 12px; color: #fff; font-size: 17px; outline: none; }
-.manual input:focus { border-color: #555; }
-.manual button { padding: 0 16px; border: none; border-radius: 12px; font-weight: 800; font-size: 15px; white-space: nowrap; }
-#addCashBtn { background: #052e16; color: #4ade80; border: 1px solid #14532d; }
-#addTngBtn { background: #0b1a3a; color: #60a5fa; border: 1px solid #1e3a8a; }
-
-.list-wrap { margin-top: 24px; }
-.list-title { font-size: 14px; opacity: .7; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-table { width: 100%; border-collapse: separate; border-spacing: 0; background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 14px; overflow: hidden; }
-thead th { background: #111; font-size: 13px; font-weight: 600; text-align: left; padding: 11px 12px; opacity: .75; }
-tbody td { padding: 14px 12px; border-top: 1px solid #181818; font-size: 17px; font-variant-numeric: tabular-nums; }
-tbody tr:first-child td { border-top: none; }
-.type-cash { color: #22c55e; font-weight: 800; }
-.type-tng { color: #3b82f6; font-weight: 800; }
-.empty { padding: 28px; text-align: center; opacity: .5; font-size: 15px; }
-
-.actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 20px; position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px 18px; background: linear-gradient(to top, #000 70%, transparent); max-width: 520px; margin-inline: auto; }
-.actions button { height: 58px; border: none; border-radius: 14px; font-size: 18px; font-weight: 800; background: #1c1c1c; color: #fff; border: 1px solid #2a2a2a; }
-#clearBtn { background: #2a0f0f; color: #fca5a5; border-color: #7f1d1d; }
-#undoBtn { background: #1a1a1a; }
-#settleBtn { background: #facc15; color: #000; border-color: #eab308; }
-
-.badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; background: #222; opacity: .8; }
-.offline { background: #14532d; color: #86efac; }
-.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; opacity: .7; font-size: 12px; }
-.chip { border: 1px solid #333; padding: 4px 8px; border-radius: 8px; }
-
-@media (max-width: 380px) {
-  .mic { width: 170px; height: 170px; }
-  .card .value { font-size: 30px; }
-  .card.total .value { font-size: 38px; }
-}
-</style>
+        /* 胜利特效 */
+        .confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; background: radial-gradient(circle, rgba(0,255,255,0.4) 0%, transparent 70%); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    </style>
 </head>
 <body>
-<div class="app">
-  <header>
-    <h1>小贩语音记账</h1>
-    <div id="date">-</div>
-  </header>
 
-  <div class="totals">
-    <div class="card cash">
-      <label>现金总额</label>
-      <div class="value" id="cashTotal">RM 0.00</div>
+    <!-- 开始界面 -->
+    <div id="start-screen" class="screen active">
+        <h1>🌊 深海奇遇</h1>
+        <p>调皮的迷雾海怪偷走了发光水母的“能量单词”！<br>勇敢的探险家，请帮它们找回光芒吧！</p>
+        <button onclick="startLevel1()">开始冒险 🚀</button>
     </div>
-    <div class="card tng">
-      <label>TnG总额</label>
-      <div class="value" id="tngTotal">RM 0.00</div>
+
+    <!-- 第一关：浅海珊瑚礁 -->
+    <div id="level1-screen" class="screen">
+        <h2>🐢 浅海珊瑚礁</h2>
+        <p>念出咒语，救出被困的小海龟！<br>(配对英文与中文)</p>
+        <div id="card-grid" class="grid"></div>
+        <p id="l1-status" style="font-size:1.2rem; height:20px;"></p>
     </div>
-    <div class="card total">
-      <label>今日总收入</label>
-      <div class="value" id="allTotal">RM 0.00</div>
+
+    <!-- 第二关：沉船迷宫 -->
+    <div id="level2-screen" class="screen">
+        <h2>🚢 沉船迷宫</h2>
+        <p>拼出正确的句子，打开大门！</p>
+        <div id="current-sentence" class="sentence-area"></div>
+        <div id="word-bank" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom:20px;"></div>
+        <button onclick="checkSentence()" style="padding:10px 30px; font-size:1rem;">确认句子 ✅</button>
+        <p id="l2-status" style="margin-top:15px; height:20px;"></p>
     </div>
-  </div>
 
-  <div class="mic-wrap">
-    <button id="micBtn" class="mic" aria-label="按住说话">
-      <div class="mic-icon">🎤</div>
-      <div>按住说话</div>
-    </button>
-    <div id="status">准备就绪 · 离线可用</div>
-    <div class="chips">
-      <span class="chip">"收现金5"</span>
-      <span class="chip">"TnG 10"</span>
-      <span class="chip">"cash 7.5"</span>
-      <span class="chip">"settle"</span>
+    <!-- 第三关：深渊水晶洞（已改为听写模式） -->
+    <div id="level3-screen" class="screen">
+        <h2>👾 迷雾海怪的考验</h2>
+        <p>"想拿回能量？先听听我的咒语，把它拼出来！"</p>
+        <div class="dictation-box">
+            <div class="speaker-btn" onclick="playDictationAudio()">🔊</div>
+            <div class="zh-word" id="dictation-zh"></div>
+            <input type="text" id="dictation-input" placeholder="在这里输入英文..." autocomplete="off">
+            <br>
+            <button onclick="checkDictation()" style="padding:10px 30px; font-size:1rem;">提交咒语 ✨</button>
+        </div>
+        <p id="l3-status" class="status-msg"></p>
     </div>
-  </div>
 
-  <div class="heard">
-    <div class="heard-title">识别内容</div>
-    <div id="lastText">-</div>
-    <div class="manual">
-      <input id="manualInput" type="text" placeholder="吵杂？手动改这里..." enterkeyhint="done" autocomplete="off">
-      <button id="addCashBtn">记现金</button>
-      <button id="addTngBtn">记TnG</button>
+    <!-- 胜利界面 -->
+    <div id="win-screen" class="screen">
+        <div class="confetti"></div>
+        <h1>🎉 恭喜通关！</h1>
+        <p>水母们重新亮起了光芒！<br>你是最棒的深海探险家！🏆</p>
+        <button onclick="location.reload()">再玩一次 🔄</button>
     </div>
-  </div>
 
-  <div class="list-wrap">
-    <div class="list-title">
-      <span>今日记录</span>
-      <span class="badge" id="countBadge">0 笔</span>
-    </div>
-    <table>
-      <thead><tr><th>时间</th><th>类型</th><th style="text-align:right">金额</th></tr></thead>
-      <tbody id="listBody">
-        <tr><td colspan="3" class="empty">还没有记录</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<div class="actions">
-  <button id="settleBtn">结算</button>
-  <button id="undoBtn">撤销</button>
-  <button id="clearBtn">清空</button>
-</div>
-
-<script type="module">
-import { pipeline, env } from 'https://esm.sh/@xenova/transformers@2.17.2';
-env.useBrowserCache = true;
-env.allowLocalModels = false;
-
-// --- PWA Setup ---
-const manifestData = {
-  name: "小贩语音记账",
-  short_name: "记账",
-  start_url: ".",
-  display: "standalone",
-  background_color: "#000000",
-  theme_color: "#000000",
-  description: "马来西亚小贩离线语音记账",
-  icons: [{
-    src: "data:image/svg+xml;base64," + btoa(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='#000'/><circle cx='256' cy='256' r='180' fill='#dc2626'/><text x='256' y='290' font-size='200' text-anchor='middle' fill='white' font-family='Arial'>🎤</text></svg>`),
-    sizes: "512x512",
-    type: "image/svg+xml"
-  }]
-};
-document.getElementById('manifest').href = URL.createObjectURL(new Blob([JSON.stringify(manifestData)], {type: 'application/json'}));
-
-const swCode = `
-const CACHE='hawker-v4';
-self.addEventListener('install',e=>{self.skipWaiting()});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))));self.clients.claim()});
-self.addEventListener('fetch',e=>{
-  if(e.request.method!=='GET') return;
-  e.respondWith(caches.open(CACHE).then(async cache=>{
-    const cached=await cache.match(e.request);
-    const fetchPromise=fetch(e.request).then(res=>{
-      if(res.ok){cache.put(e.request,res.clone())}
-      return res;
-    }).catch(()=>cached);
-    return cached||fetchPromise;
-  }));
-});
-`;
-if('serviceWorker' in navigator){
-  const swUrl = URL.createObjectURL(new Blob([swCode], {type:'text/javascript'}));
-  navigator.serviceWorker.register(swUrl).catch(()=>{});
-}
-
-// --- App Logic ---
-const $ = id => document.getElementById(id);
-const cashTotalEl = $('cashTotal'), tngTotalEl = $('tngTotal'), allTotalEl = $('allTotal');
-const listBody = $('listBody'), lastText = $('lastText'), statusEl = $('status');
-const micBtn = $('micBtn'), manualInput = $('manualInput');
-const countBadge = $('countBadge');
-
-let records = [];
-const todayKey = () => 'hawker-' + new Date().toISOString().slice(0,10);
-
-function fmt(n){ return 'RM ' + n.toFixed(2); }
-function timeStr(ts){ const d=new Date(ts); return d.toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'}); }
-
-function loadData(){
-  records = JSON.parse(localStorage.getItem(todayKey()) || '[]');
-  render();
-}
-function saveData(){ localStorage.setItem(todayKey(), JSON.stringify(records)); }
-
-function render(){
-  const cash = records.filter(r=>r.type==='cash').reduce((s,r)=>s+r.amount,0);
-  const tng = records.filter(r=>r.type==='tng').reduce((s,r)=>s+r.amount,0);
-  cashTotalEl.textContent = fmt(cash);
-  tngTotalEl.textContent = fmt(tng);
-  allTotalEl.textContent = fmt(cash+tng);
-  countBadge.textContent = records.length + ' 笔';
-  
-  listBody.innerHTML = '';
-  if(records.length===0){
-    listBody.innerHTML = `<tr><td colspan="3" class="empty">还没有记录</td></tr>`;
-    return;
-  }
-  [...records].reverse().forEach(r=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${timeStr(r.time)}</td><td class="type-${r.type}">${r.type==='cash'?'现金':'TnG'}</td><td style="text-align:right;font-weight:700">${r.amount.toFixed(2)}</td>`;
-    listBody.appendChild(tr);
-  });
-}
-
-function addRecord(type, amount){
-  if(!amount || amount<=0) return;
-  records.push({type, amount: +amount, time: Date.now()});
-  saveData(); render();
-  speak('已记好');
-  navigator.vibrate?.(20);
-}
-
-function undo(){
-  if(records.length===0) return;
-  records.pop(); saveData(); render(); speak('已撤销');
-}
-function clearToday(){
-  if(!confirm('确定清空今日所有记录？')) return;
-  records=[]; saveData(); render(); speak('已清空');
-}
-function settle(){
-  const cash = records.filter(r=>r.type==='cash').reduce((s,r)=>s+r.amount,0);
-  const tng = records.filter(r=>r.type==='tng').reduce((s,r)=>s+r.amount,0);
-  const total = cash+tng;
-  const msg = `现金${cash.toFixed(0)}块, TnG ${tng.toFixed(0)}块, 总共${total.toFixed(0)}块`;
-  speak(msg);
-  statusEl.textContent = msg;
-  setTimeout(()=>statusEl.textContent='准备就绪 · 离线可用', 3000);
-}
-
-function speak(text){
-  try{
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'zh-CN'; u.rate = 1.05; u.pitch = 1;
-    speechSynthesis.cancel(); speechSynthesis.speak(u);
-  }catch{}
-}
-
-// --- Intent Parsing (模仿 Llama 3) ---
-function parseCommand(text){
-  const t = text.toLowerCase().trim();
-  // 正则意图
-  if(/(取消|撤销|上一笔|undo|padam|delete)/i.test(t)) return {action:'undo'};
-  if(/(清空|清除|clear|kosong)/i.test(t)) return {action:'clear'};
-  if(/(结算|今日结算|结账|settle|kira|total)/i.test(t)) return {action:'settle'};
-  
-  const amountMatch = t.match(/(\d+[\.,]?\d{0,2})/);
-  const amount = amountMatch ? parseFloat(amountMatch[1].replace(',','.')) : null;
-  
-  const isCash = /(现金|现钱|收现|cash|tunai|duit)/i.test(t);
-  const isTng = /(tng|tngo|touch|一touch|touchngo|tng|电子|ewallet|duitnow|qr)/i.test(t);
-  
-  if(amount){
-    if(isTng) return {action:'add', type:'tng', amount};
-    if(isCash) return {action:'add', type:'cash', amount};
-    // 默认现金
-    return {action:'add', type:'cash', amount};
-  }
-  return {action:'unknown', text};
-}
-
-/*
-// --- 可选: WebLLM Llama 3 集成 (更准) ---
-// import * as webllm from "https://esm.sh/@mlc-ai/web-llm";
-// const engine = await webllm.CreateMLCEngine("Llama-3.2-3B-Instruct-q4f32_1-MLC", { initProgressCallback: p=>statusEl.textContent=p.text });
-// async function parseWithLLM(text){
-//   const prompt = `你是马来西亚小贩记账助手。用户说: "${text}"。提取意图JSON: {"action":"add|settle|undo|clear","type":"cash|tng","amount":number}。只返回JSON。规则: 现金=cash, TnG=tng/touch, 结算=settle。`;
-//   const r = await engine.chat.completions.create({messages:[{role:"user",content:prompt}], temperature:0});
-//   return JSON.parse(r.choices[0].message.content);
-// }
-*/
-
-function handleTranscript(text){
-  lastText.textContent = text;
-  manualInput.value = text;
-  const cmd = parseCommand(text);
-  if(cmd.action==='add'){
-    addRecord(cmd.type, cmd.amount);
-    statusEl.textContent = `已记 ${cmd.type==='cash'?'现金':'TnG'} ${cmd.amount}`;
-  }else if(cmd.action==='settle'){
-    settle();
-  }else if(cmd.action==='undo'){
-    undo();
-  }else if(cmd.action==='clear'){
-    clearToday();
-  }else{
-    statusEl.textContent = '未识别, 请手动选择';
-  }
-}
-
-// --- Voice Recognition ---
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition = null;
-let whisper = null;
-let mediaRecorder = null, audioChunks = [], stream = null;
-let isPressing = false;
-
-async function initRecognition(){
-  if(SpeechRecognition){
-    recognition = new SpeechRecognition();
-    recognition.lang = 'zh-CN'; // 同时能识别中英马来数字
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = false;
-    recognition.onresult = e => handleTranscript(e.results[0][0].transcript);
-    recognition.onerror = e => { statusEl.textContent = '识别失败, 用离线模型'; };
-    recognition.onend = ()=>{ if(isPressing) startListen(); else statusEl.textContent='准备就绪 · 离线可用'; };
-  }
-}
-
-async function loadWhisper(){
-  if(whisper) return;
-  statusEl.textContent = '首次加载离线模型...';
-  whisper = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
-    quantized: true,
-    progress_callback: d => {
-      if(d.status==='download') statusEl.textContent = `下载模型 ${Math.round(d.progress||0)}%`;
-      if(d.status==='ready') statusEl.textContent = '离线模型就绪';
+<script>
+    // --- 音效生成器 (无需外部文件) ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        if (type === 'click') { osc.frequency.value = 800; gain.gain.value = 0.1; osc.start(); osc.stop(audioCtx.currentTime + 0.05); }
+        if (type === 'success') { osc.type = 'sine'; osc.frequency.setValueAtTime(523, audioCtx.currentTime); osc.frequency.setValueAtTime(659, audioCtx.currentTime + 0.1); osc.frequency.setValueAtTime(784, audioCtx.currentTime + 0.2); gain.gain.value = 0.2; osc.start(); osc.stop(audioCtx.currentTime + 0.4); }
+        if (type === 'fail') { osc.type = 'sawtooth'; osc.frequency.value = 200; gain.gain.value = 0.1; osc.start(); osc.stop(audioCtx.currentTime + 0.2); }
+        if (type === 'win') { 
+            [523, 659, 784, 1047].forEach((freq, i) => {
+                const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination); o.type='sine'; o.frequency.value=freq; g.gain.value=0.1;
+                o.start(audioCtx.currentTime + i*0.15); o.stop(audioCtx.currentTime + i*0.15 + 0.3);
+            });
+        }
     }
-  });
-}
 
-async function startWhisperRecord(){
-  await loadWhisper();
-  stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
-  audioChunks = [];
-  mediaRecorder = new MediaRecorder(stream, {mimeType:'audio/webm'});
-  mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-  mediaRecorder.onstop = async ()=>{
-    const blob = new Blob(audioChunks, {type:'audio/webm'});
-    statusEl.textContent = '识别中...';
-    try{
-      const out = await whisper(blob, {language:null, task:'transcribe'});
-      handleTranscript(out.text.trim());
-    }catch(e){ statusEl.textContent='离线识别失败'; }
-    stream.getTracks().forEach(t=>t.stop());
-  };
-  mediaRecorder.start();
-}
+    // --- 浏览器自带语音合成 (TTS) ---
+    function speakEnglish(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); // 停止之前的发音
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.8; // 语速稍微放慢，适合孩子
+            window.speechSynthesis.speak(utterance);
+        } else {
+            alert("当前浏览器不支持语音播放，请使用 Chrome 或 Edge 浏览器哦！");
+        }
+    }
 
-function stopWhisperRecord(){ mediaRecorder?.state==='recording' && mediaRecorder.stop(); }
+    // --- 第一关逻辑 (保持不变) ---
+    const pairs = [
+        {en: "Jellyfish", zh: "水母"}, {en: "Turtle", zh: "海龟"}, 
+        {en: "Whale", zh: "鲸鱼"}, {en: "Starfish", zh: "海星"},
+        {en: "Coral", zh: "珊瑚"}, {en: "Shark", zh: "鲨鱼"},
+        {en: "Dolphin", zh: "海豚"}, {en: "Crab", zh: "螃蟹"}
+    ];
+    let cards = []; let flippedCards = []; let matchedCount = 0;
 
-async function startListen(){
-  if(isPressing) return;
-  isPressing = true;
-  micBtn.classList.add('active');
-  navigator.vibrate?.(10);
-  statusEl.textContent = '聆听中...';
-  if(recognition){
-    try{ recognition.start(); }catch{}
-  }else{
-    try{ await startWhisperRecord(); }catch(e){ statusEl.textContent='需要麦克风权限'; isPressing=false; }
-  }
-}
-function stopListen(){
-  if(!isPressing) return;
-  isPressing = false;
-  micBtn.classList.remove('active');
-  if(recognition){ try{ recognition.stop(); }catch{} }
-  else{ stopWhisperRecord(); }
-}
+    function startLevel1() {
+        document.getElementById('start-screen').classList.remove('active');
+        document.getElementById('level1-screen').classList.add('active');
+        initCards();
+    }
 
-// Touch & Mouse
-['pointerdown','touchstart','mousedown'].forEach(ev=> micBtn.addEventListener(ev, e=>{e.preventDefault(); startListen();}));
-['pointerup','pointerleave','touchend','mouseup','touchcancel'].forEach(ev=> window.addEventListener(ev, stopListen));
+    function initCards() {
+        const grid = document.getElementById('card-grid');
+        grid.innerHTML = ''; cards = []; flippedCards = []; matchedCount = 0;
+        pairs.forEach(p => { cards.push({text: p.en, type: 'en'}); cards.push({text: p.zh, type: 'zh'}); });
+        cards.sort(() => Math.random() - 0.5);
+        cards.forEach((card, idx) => {
+            const div = document.createElement('div');
+            div.className = 'card'; div.innerText = '?'; div.dataset.idx = idx;
+            div.onclick = () => flipCard(div, card, idx);
+            grid.appendChild(div);
+        });
+    }
 
-// Buttons
-$('addCashBtn').onclick = ()=>{ const m=manualInput.value.match(/(\d+[\.,]?\d{0,2})/); if(m) addRecord('cash', parseFloat(m[1])); };
-$('addTngBtn').onclick = ()=>{ const m=manualInput.value.match(/(\d+[\.,]?\d{0,2})/); if(m) addRecord('tng', parseFloat(m[1])); };
-$('undoBtn').onclick = undo;
-$('clearBtn').onclick = clearToday;
-$('settleBtn').onclick = settle;
+    function flipCard(el, card, idx) {
+        if(flippedCards.length === 2 || el.classList.contains('flipped') || el.classList.contains('matched')) return;
+        playSound('click'); el.classList.add('flipped'); el.innerText = card.text;
+        flippedCards.push({el, card, idx});
+        if(flippedCards.length === 2) checkMatch();
+    }
 
-function updateDate(){
-  const d = new Date();
-  $('date').textContent = d.toLocaleDateString('zh-CN',{month:'long',day:'numeric', weekday:'short'});
-}
-updateDate(); loadData(); initRecognition();
+    function checkMatch() {
+        const [a, b] = flippedCards;
+        const correctPair = pairs.find(p => 
+            (p.en === a.card.text && p.zh === b.card.text) || 
+            (p.zh === a.card.text && p.en === b.card.text)
+        );
+        if(correctPair) {
+            playSound('success'); a.el.classList.add('matched'); b.el.classList.add('matched');
+            matchedCount++;
+            if(matchedCount === pairs.length) setTimeout(() => {
+                document.getElementById('level1-screen').classList.remove('active');
+                document.getElementById('level2-screen').classList.add('active');
+                initLevel2();
+            }, 800);
+        } else {
+            playSound('fail'); a.el.classList.add('shake'); b.el.classList.add('shake');
+            setTimeout(() => {
+                a.el.classList.remove('flipped', 'shake'); a.el.innerText = '?';
+                b.el.classList.remove('flipped', 'shake'); b.el.innerText = '?';
+            }, 800);
+        }
+        flippedCards = [];
+    }
 
-// Keep screen awake for stall use
-let wakeLock=null; 
-document.addEventListener('visibilitychange', async ()=>{ if(document.visibilityState==='visible' && 'wakeLock' in navigator){ try{ wakeLock = await navigator.wakeLock.request('screen'); }catch{} } });
+    // --- 第二关逻辑 (保持不变) ---
+    const sentenceData = { words: ["The", "whale", "is", "blue", "."], correct: "The whale is blue ." };
+    let currentWords = [];
 
-// Update badge for offline
-window.addEventListener('online', ()=> statusEl.textContent='准备就绪 · 在线');
-window.addEventListener('offline', ()=> statusEl.textContent='准备就绪 · 离线可用');
-if(!navigator.onLine) statusEl.textContent='准备就绪 · 离线可用';
+    function initLevel2() {
+        const bank = document.getElementById('word-bank');
+        const area = document.getElementById('current-sentence');
+        bank.innerHTML = ''; area.innerHTML = ''; currentWords = [];
+        document.getElementById('l2-status').innerText = '';
+        let shuffled = [...sentenceData.words].sort(() => Math.random() - 0.5);
+        shuffled.forEach(w => {
+            const btn = document.createElement('div');
+            btn.className = 'word-bubble'; btn.innerText = w;
+            btn.onclick = () => addWord(btn, w);
+            bank.appendChild(btn);
+        });
+    }
+
+    function addWord(btn, word) {
+        playSound('click'); btn.classList.add('used'); currentWords.push(word);
+        const span = document.createElement('span');
+        span.innerText = word + ' '; span.style.fontSize = '1.2rem';
+        document.getElementById('current-sentence').appendChild(span);
+    }
+
+    function checkSentence() {
+        const formed = currentWords.join(' ');
+        if(formed === sentenceData.correct) {
+            playSound('success'); document.getElementById('l2-status').innerText = "太棒了！门打开了！";
+            setTimeout(() => {
+                document.getElementById('level2-screen').classList.remove('active');
+                document.getElementById('level3-screen').classList.add('active');
+                initDictation(); // 进入听写关卡
+            }, 1000);
+        } else {
+            playSound('fail'); document.getElementById('l2-status').innerText = "顺序不对哦，再试试！";
+            setTimeout(() => {
+                currentWords = []; document.getElementById('current-sentence').innerHTML = '';
+                document.querySelectorAll('.word-bubble').forEach(b => b.classList.remove('used'));
+            }, 800);
+        }
+    }
+
+    // --- 新增：第三关 听写模式逻辑 ---
+    const dictationWords = [
+        {en: "jellyfish", zh: "水母"}, {en: "turtle", zh: "海龟"}, 
+        {en: "whale", zh: "鲸鱼"}, {en: "starfish", zh: "海星"}
+    ];
+    let currentDictationIndex = 0;
+
+    function initDictation() {
+        currentDictationIndex = 0;
+        loadDictationWord();
+    }
+
+    function loadDictationWord() {
+        if (currentDictationIndex >= dictationWords.length) {
+            // 全部听写完成，通关！
+            playSound('win');
+            document.getElementById('level3-screen').classList.remove('active');
+            document.getElementById('win-screen').classList.add('active');
+            return;
+        }
+        const word = dictationWords[currentDictationIndex];
+        document.getElementById('dictation-zh').innerText = word.zh;
+        document.getElementById('dictation-input').value = '';
+        document.getElementById('l3-status').innerText = `进度：${currentDictationIndex + 1} / ${dictationWords.length}`;
+        document.getElementById('dictation-input').focus();
+        
+        // 自动播放一次发音
+        setTimeout(() => speakEnglish(word.en), 500);
+    }
+
+    function playDictationAudio() {
+        const word = dictationWords[currentDictationIndex];
+        speakEnglish(word.en);
+    }
+
+    function checkDictation() {
+        const input = document.getElementById('dictation-input').value.trim().toLowerCase();
+        const correct = dictationWords[currentDictationIndex].en.toLowerCase();
+        
+        if (input === correct) {
+            playSound('success');
+            document.getElementById('l3-status').innerText = "✨ 咒语正确！能量+1";
+            currentDictationIndex++;
+            setTimeout(loadDictationWord, 1000);
+        } else {
+            playSound('fail');
+            document.getElementById('l3-status').innerText = "😢 拼错啦，再听一次试试！";
+            document.getElementById('dictation-input').value = '';
+            document.getElementById('dictation-input').focus();
+        }
+    }
+
+    // 支持按回车键提交听写
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && document.getElementById('level3-screen').classList.contains('active')) {
+            checkDictation();
+        }
+    });
 </script>
-<script>(function(){document.addEventListener("click",function(e){var a=e.target.closest("[data-product-id]");if(!a)return;e.preventDefault();var pid=a.getAttribute("data-product-id");if(pid)parent.postMessage({type:"ecto-artifact-link-click",productId:pid},"*")})})();</script>
-
-</body></html>
+</body>
+</html>
